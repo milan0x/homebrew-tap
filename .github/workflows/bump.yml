@@ -1,0 +1,40 @@
+name: bump
+
+# Keeps Casks/micguard.rb pointed at the latest MicGuard release.
+# The release script triggers this via workflow_dispatch; the cron is the
+# backstop. The download URL is derived from the cask's url template plus the
+# latest release tag — renaming the DMG asset or changing the tag scheme in
+# the MicGuard repo breaks this silently.
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Update cask to latest MicGuard release
+        run: |
+          set -euo pipefail
+          tag=$(curl -fsSL https://api.github.com/repos/milan0x/MicGuard/releases/latest | jq -r .tag_name)
+          version="${tag#v}"
+          current=$(sed -n 's/^  version "\(.*\)"$/\1/p' Casks/micguard.rb)
+          if [ "$version" = "$current" ]; then
+            echo "cask already at ${current}"
+            exit 0
+          fi
+          url="https://github.com/milan0x/MicGuard/releases/download/${tag}/MicGuard-${version}.dmg"
+          sha=$(curl -fsSL "$url" | shasum -a 256 | cut -d' ' -f1)
+          sed -i "s/^  version \".*\"/  version \"${version}\"/" Casks/micguard.rb
+          sed -i "s/^  sha256 \".*\"/  sha256 \"${sha}\"/" Casks/micguard.rb
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Casks/micguard.rb
+          git commit -m "micguard ${version}"
+          git push
