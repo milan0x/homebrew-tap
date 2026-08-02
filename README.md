@@ -5,6 +5,8 @@ Homebrew tap for [MicGuard](https://github.com/milan0x/MicGuard).
 ```bash
 brew tap milan0x/tap
 brew install --cask micguard
+# or
+brew install --cask local-cloud-browser
 ```
 
 The cask installs the same Apple-notarized DMG published on the MicGuard
