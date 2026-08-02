@@ -12,8 +12,6 @@ cask "micguard" do
     strategy :github_latest
   end
 
-  auto_updates false
-  depends_on macos: ">= :ventura"
 
   app "MicGuard.app"
 
