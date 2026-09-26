@@ -5,6 +5,11 @@ name: bump
 # Each download URL is derived from the cask's url template plus the latest
 # release tag — renaming a release asset or changing a tag scheme in an app
 # repo breaks its cask silently.
+#
+# GitHub disables scheduled workflows after 60 days without repo activity,
+# which would also block the release-script dispatch. The keepalive step
+# re-enables this workflow via the API on every run, resetting that timer
+# without creating commits.
 
 on:
   schedule:
@@ -16,6 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      actions: write
     steps:
       - uses: actions/checkout@v4
 
@@ -52,3 +58,8 @@ jobs:
             git commit -m "Bump casks to latest releases"
             git push
           fi
+
+      - name: Keep workflow enabled
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/bump.yml/enable"
