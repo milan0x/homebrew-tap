@@ -23,9 +23,11 @@ jobs:
       contents: write
       actions: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Update casks to latest releases
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           # cask file | app repo | asset prefix
@@ -37,7 +39,7 @@ jobs:
           while IFS='|' read -r cask repo prefix; do
             [ -z "$cask" ] && continue
             file="Casks/${cask}.rb"
-            tag=$(curl -fsSL "https://api.github.com/repos/${repo}/releases/latest" | jq -r .tag_name)
+            tag=$(gh api "repos/${repo}/releases/latest" --jq .tag_name)
             version="${tag#v}"
             current=$(sed -n 's/^  version "\(.*\)"$/\1/p' "$file")
             if [ "$version" = "$current" ]; then
@@ -60,6 +62,7 @@ jobs:
           fi
 
       - name: Keep workflow enabled
+        if: always()
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/bump.yml/enable"
